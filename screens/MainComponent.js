@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { CAMPSITES } from "../shared/CAMPSITES";
-import DirectoryScreen from "./DirectoryScreen";
+import { useState } from 'react';
+import { CAMPSITES } from '../shared/campsites';
+import DirectoryScreen from './DirectoryScreen';
 
 const Main = () => {
-    const [campsites, setCampsites] = useState (CAMPSITES);
+    const [campsites, setCampsites] = useState(CAMPSITES);
 
-    return <DirectoryScreen campsites={campsites}/>;
-}
+    return <DirectoryScreen campsites={campsites} />;
+};
 
 export default Main;
