@@ -1,381 +1,174 @@
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
-import Constants from 'expo-constants';
-import CampsiteInfoScreen from './CampsiteInfoScreen';
-import DirectoryScreen from './DirectoryScreen';
-import { createStackNavigator } from '@react-navigation/stack';
-import {
-    createDrawerNavigator,
-    DrawerContentScrollView,
-    DrawerItemList
-} from '@react-navigation/drawer';
-import HomeScreen from './HomeScreen';
-import AboutScreen from './AboutScreen';
-import ContactScreen from './ContactScreen';
-import ReservationScreen from './ReservationScreen';
-import { Icon } from 'react-native-elements';
-import logo from '../assets/images/logo.png';
-import { useDispatch } from 'react-redux';
-import { useEffect } from 'react';
-import { fetchPartners } from '../features/partners/partnersSlice';
-import { fetchCampsites } from '../features/campsites/campsitesSlice';
-import { fetchPromotions } from '../features/promotions/promotionsSlice';
-import { fetchComments } from '../features/comments/commentsSlice';
-import FavoritesScreen from './FavoritesScreen';
-import LoginScreen from './LoginScreen';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { CheckBox, Input, Button, Icon } from 'react-native-elements';
+import * as SecureStore from 'expo-secure-store';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-const Drawer = createDrawerNavigator();
+const LoginTab = ({ navigation }) => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [remember, setRemember] = useState(false);
 
-const screenOptions = {
-    headerTintColor: '#fff',
-    headerStyle: { backgroundColor: '#5637DD' }
-};
+    const handleLogin = () => {
+        console.log('username:', username);
+        console.log('password:', password);
+        console.log('remember:', remember);
+        if (remember) {
+            SecureStore.setItemAsync(
+                'userinfo',
+                JSON.stringify({
+                    username,
+                    password
+                })
+            ).catch((error) => console.log('Could not save user info', error));
+        } else {
+            SecureStore.deleteItemAsync('userinfo').catch((error) =>
+                console.log('Could not delete user info', error)
+            );
+        }
+    };
 
-const HomeNavigator = () => {
-    const Stack = createStackNavigator();
+    useEffect(() => {
+        SecureStore.getItemAsync('userinfo').then((userdata) => {
+            const userinfo = JSON.parse(userdata);
+            if (userinfo) {
+                setUsername(userinfo.username);
+                setPassword(userinfo.password);
+                setRemember(true);
+            }
+        });
+    }, []);
+
     return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='Home'
-                component={HomeScreen}
-                options={({ navigation }) => ({
-                    title: 'Home',
-                    headerLeft: () => (
-                        <Icon
-                            name='home'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
+        <View style={styles.container}>
+            <Input
+                placeholder='Username'
+                leftIcon={{ type: 'font-awesome', name: 'user-o' }}
+                onChangeText={(text) => setUsername(text)}
+                value={username}
+                containerStyle={styles.formInput}
+                leftIconContainerStyle={styles.formIcon}
             />
-        </Stack.Navigator>
-    );
-};
-
-const AboutNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='About'
-                component={AboutScreen}
-                options={({ navigation }) => ({
-                    headerLeft: () => (
-                        <Icon
-                            name='info-circle'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
+            <Input
+                placeholder='Password'
+                leftIcon={{ type: 'font-awesome', name: 'key' }}
+                onChangeText={(text) => setPassword(text)}
+                value={password}
+                containerStyle={styles.formInput}
+                leftIconContainerStyle={styles.formIcon}
             />
-        </Stack.Navigator>
-    );
-};
-
-const ContactNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='Contact'
-                component={ContactScreen}
-                options={({ navigation }) => ({
-                    title: 'Contact Us',
-                    headerLeft: () => (
-                        <Icon
-                            name='address-card'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
+            <CheckBox
+                title='Remember Me'
+                center
+                checked={remember}
+                onPress={() => setRemember(!remember)}
+                containerStyle={styles.formCheckbox}
             />
-        </Stack.Navigator>
-    );
-};
-
-const ReservationNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='Reservation'
-                component={ReservationScreen}
-                options={({ navigation }) => ({
-                    title: 'Reservation Search',
-                    headerLeft: () => (
-                        <Icon
-                            name='tree'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
-            />
-        </Stack.Navigator>
-    );
-};
-
-const FavoritesNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='Favorites'
-                component={FavoritesScreen}
-                options={({ navigation }) => ({
-                    title: 'Favorite Campsites',
-                    headerLeft: () => (
-                        <Icon
-                            name='heart'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
-            />
-        </Stack.Navigator>
-    );
-};
-
-const LoginNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator screenOptions={screenOptions}>
-            <Stack.Screen
-                name='Login'
-                component={LoginScreen}
-                options={({ navigation }) => ({
-                    headerLeft: () => (
+            <View style={styles.formButton}>
+                <Button
+                    onPress={() => handleLogin()}
+                    title='Login'
+                    color='#5637DD'
+                    icon={
                         <Icon
                             name='sign-in'
                             type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
+                            color='#fff'
+                            iconStyle={{ marginRight: 10 }}
                         />
-                    )
-                })}
-            />
-        </Stack.Navigator>
-    );
-};
-
-const DirectoryNavigator = () => {
-    const Stack = createStackNavigator();
-    return (
-        <Stack.Navigator
-            initialRouteName='Directory'
-            screenOptions={screenOptions}
-        >
-            <Stack.Screen
-                name='Directory'
-                component={DirectoryScreen}
-                options={({ navigation }) => ({
-                    title: 'Campsite Directory',
-                    headerLeft: () => (
-                        <Icon
-                            name='list'
-                            type='font-awesome'
-                            iconStyle={styles.stackIcon}
-                            onPress={() => navigation.toggleDrawer()}
-                        />
-                    )
-                })}
-            />
-            <Stack.Screen
-                name='CampsiteInfo'
-                component={CampsiteInfoScreen}
-                options={({ route }) => ({
-                    title: route.params.campsite.name
-                })}
-            />
-        </Stack.Navigator>
-    );
-};
-
-const CustomDrawerContent = (props) => (
-    <DrawerContentScrollView {...props}>
-        <View style={styles.drawerHeader}>
-            <View style={{ flex: 1 }}>
-                <Image source={logo} style={styles.drawerImage} />
+                    }
+                    buttonStyle={{ backgroundColor: '#5637DD' }}
+                />
             </View>
-            <View style={{ flex: 2 }}>
-                <Text style={styles.drawerHeaderText}>NuCamp</Text>
+            <View style={styles.formButton}>
+                <Button
+                    onPress={() => navigation.navigate('Register')}
+                    title='Register'
+                    type='clear'
+                    icon={
+                        <Icon
+                            name='user-plus'
+                            type='font-awesome'
+                            color='blue'
+                            iconStyle={{ marginRight: 10 }}
+                        />
+                    }
+                    titleStyle={{ color: 'blue' }}
+                />
             </View>
         </View>
-        <DrawerItemList {...props} labelStyle={{ fontWeight: 'bold' }} />
-    </DrawerContentScrollView>
-);
+    );
+};
 
-const Main = () => {
-    const dispatch = useDispatch();
+const RegisterTab = () => {
+    return <ScrollView></ScrollView>;
+};
 
-    useEffect(() => {
-        dispatch(fetchCampsites());
-        dispatch(fetchPromotions());
-        dispatch(fetchPartners());
-        dispatch(fetchComments());
-    }, [dispatch]);
+const Tab = createBottomTabNavigator();
+
+const LoginScreen = () => {
+    const tabBarOptions = {
+        activeBackgroundColor: '#5637DD',
+        inactiveBackgroundColor: '#CEC8FF',
+        activeTintColor: '#fff',
+        inactiveTintColor: '#808080',
+        labelStyle: { fontSize: 16 }
+    };
 
     return (
-        <View
-            style={{
-                flex: 1,
-                paddingTop:
-                    Platform.OS === 'ios' ? 0 : Constants.statusBarHeight
-            }}
-        >
-            <Drawer.Navigator
-                initialRouteName='Home'
-                drawerContent={CustomDrawerContent}
-                drawerStyle={{ backgroundColor: '#CEC8FF' }}
-            >
-                <Drawer.Screen
-                    name='Login'
-                    component={LoginNavigator}
-                    options={{
-                        drawerIcon: ({ color }) => (
+        <Tab.Navigator tabBarOptions={tabBarOptions}>
+            <Tab.Screen
+                name='Login'
+                component={LoginTab}
+                options={{
+                    tabBarIcon: (props) => {
+                        return (
                             <Icon
                                 name='sign-in'
                                 type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
+                                color={props.color}
                             />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='Home'
-                    component={HomeNavigator}
-                    options={{
-                        title: 'Home',
-                        drawerIcon: ({ color }) => (
+                        );
+                    }
+                }}
+            />
+            <Tab.Screen
+                name='Register'
+                component={RegisterTab}
+                options={{
+                    tabBarIcon: (props) => {
+                        return (
                             <Icon
-                                name='home'
+                                name='user-plus'
                                 type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
+                                color={props.color}
                             />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='Directory'
-                    component={DirectoryNavigator}
-                    options={{
-                        title: 'Campsite Directory',
-                        drawerIcon: ({ color }) => (
-                            <Icon
-                                name='list'
-                                type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
-                            />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='ReserveCampsite'
-                    component={ReservationNavigator}
-                    options={{
-                        title: 'Reserve Campsite',
-                        drawerIcon: ({ color }) => (
-                            <Icon
-                                name='tree'
-                                type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
-                            />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='Favorites'
-                    component={FavoritesNavigator}
-                    options={{
-                        title: 'My Favorites',
-                        drawerIcon: ({ color }) => (
-                            <Icon
-                                name='heart'
-                                type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
-                            />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='About'
-                    component={AboutNavigator}
-                    options={{
-                        title: 'About',
-                        drawerIcon: ({ color }) => (
-                            <Icon
-                                name='info-circle'
-                                type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
-                            />
-                        )
-                    }}
-                />
-                <Drawer.Screen
-                    name='Contact'
-                    component={ContactNavigator}
-                    options={{
-                        title: 'Contact Us',
-                        drawerIcon: ({ color }) => (
-                            <Icon
-                                name='address-card'
-                                type='font-awesome'
-                                size={24}
-                                iconStyle={{ width: 24 }}
-                                color={color}
-                            />
-                        )
-                    }}
-                />
-            </Drawer.Navigator>
-        </View>
+                        );
+                    }
+                }}
+            />
+        </Tab.Navigator>
     );
 };
 
 const styles = StyleSheet.create({
-    drawerHeader: {
-        backgroundColor: '#5637DD',
-        height: 140,
-        alignItems: 'center',
+    container: {
         justifyContent: 'center',
-        flex: 1,
-        flexDirection: 'row'
+        margin: 20
     },
-    drawerHeaderText: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold'
+    formIcon: {
+        marginRight: 10
     },
-    drawerImage: {
+    formInput: {
+        padding: 10
+    },
+    formCheckbox: {
         margin: 10,
-        height: 60,
-        width: 60
+        backgroundColor: null
     },
-    stackIcon: {
-        marginLeft: 10,
-        color: '#fff',
-        fontSize: 24
+    formButton: {
+        margin: 40
     }
 });
 
-export default Main;
+export default LoginScreen;
