@@ -167,7 +167,7 @@ const LoginNavigator = () => {
                         <Icon
                             name={
                                 getFocusedRouteNameFromRoute(route) ===
-                                'Register'
+                                    'Register'
                                     ? 'user-plus'
                                     : 'sign-in'
                             }
@@ -239,27 +239,30 @@ const Main = () => {
         dispatch(fetchComments());
     }, [dispatch]);
 
-    useEffect(() => {
-        NetInfo.fetch().then((connectionInfo) => {
-            Platform.OS === 'ios'
-                ? Alert.alert(
-                      'Initial Network Connectivity Type:',
-                      connectionInfo.type
-                  )
-                : ToastAndroid.show(
-                      'Initial Network Connectivity Type: ' +
-                          connectionInfo.type,
-                      ToastAndroid.LONG
-                  );
-        });
-
-        const unsubscribeNetInfo = NetInfo.addEventListener(
-            (connectionInfo) => {
-                handleConnectivityChange(connectionInfo);
+    const showNetInfo = async () => {
+        try {
+            const netInfo = await NetInfo.fetch();
+            const connectionInfo = `${netInfo.type}: ${netInfo.isConnected ? 'online' : 'offline'}`;
+            if (Platform.OS === 'ios') {
+                Alert.alert('Initial Network Connectivity Type:', connectionInfo);
+            } else {
+                ToastAndroid.show(connectionInfo, ToastAndroid.LONG);
             }
-        );
+        } catch (error) {
+            console.error('Error fetching network info:', error);
+        }
+    };    
 
-        return unsubscribeNetInfo;
+    useEffect(() => {
+        showNetInfo();
+    
+        const unsubscribe = NetInfo.addEventListener((netInfo) => {
+            handleConnectivityChange(netInfo);
+        });
+    
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     const handleConnectivityChange = (connectionInfo) => {
